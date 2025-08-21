@@ -136,6 +136,15 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
         },
         want_uptime=Decimal("2") / Decimal("3") * Decimal("100.0"),
     ),
+    "input2_station1": StationUptimeTestCase(
+        station=Station(id="1", charger_ids=["1"]),
+        reports_per_charger={
+            "1": [
+                UptimeReport(id="1", start_time_nanos=0, end_time_nanos=1, up=True),
+            ],
+        },
+        want_uptime=Decimal("100.0"),
+    ),
 }
 test_ids = sorted(station_uptime_test_cases.keys())
 @pytest.mark.parametrize(
