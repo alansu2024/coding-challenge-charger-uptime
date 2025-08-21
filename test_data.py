@@ -91,8 +91,10 @@ def test_station_from_station_line(test_case: StationTestCase) -> None:
 class StationUptimeTestCase:
     station: Station
     reports_per_charger: dict[str, list[UptimeReport]]
-    want_uptime: Decimal
+    expectation: AbstractContextManager
+    want_uptime: Decimal | None = None
 station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
+    # tests based on input_1.txt
     "basic_case": StationUptimeTestCase(
         station=Station(id="0", charger_ids=["1001", "1002"]),
         reports_per_charger={
@@ -104,6 +106,7 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
                 UptimeReport(id="1002", start_time_nanos=50000, end_time_nanos=100000, up=True),
             ],
         },
+        expectation=does_not_raise(),
         want_uptime=Decimal("100.0"),
     ),
     "explicit_downtime": StationUptimeTestCase(
@@ -113,6 +116,7 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
                 UptimeReport(id="1003", start_time_nanos=25000, end_time_nanos=75000, up=False),
             ],
         },
+        expectation=does_not_raise(),
         want_uptime=Decimal("0.0"),
     ),
     "gap_is_downtime": StationUptimeTestCase(
@@ -123,8 +127,11 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
                 UptimeReport(id="1004", start_time_nanos=100000, end_time_nanos=200000, up=True),
             ],
         },
+        expectation=does_not_raise(),
         want_uptime=Decimal("75.0"),
     ),
+
+    # Test based on input_2.txt
     "input2_station0": StationUptimeTestCase(
         station=Station(id="0", charger_ids=["0"]),
         reports_per_charger={
@@ -134,6 +141,7 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
                 UptimeReport(id="0", start_time_nanos=30, end_time_nanos=40, up=True),
             ],
         },
+        expectation=does_not_raise(),
         want_uptime=Decimal("2") / Decimal("3") * Decimal("100.0"),
     ),
     "input2_station1": StationUptimeTestCase(
@@ -143,7 +151,55 @@ station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
                 UptimeReport(id="1", start_time_nanos=0, end_time_nanos=1, up=True),
             ],
         },
+        expectation=does_not_raise(),
         want_uptime=Decimal("100.0"),
+    ),
+
+    # additional tests
+    "no_reports_for_charger": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001"]),
+        reports_per_charger={},
+        expectation=pytest.raises(ValueError),
+    ),
+    "empty_report_list_for_charger": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001"]),
+        reports_per_charger={
+            "1001": [],
+        },
+        expectation=pytest.raises(ValueError),
+    ),
+    "zero_length_report_is_no-op": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001"]),
+        reports_per_charger={
+            "1001": [
+                UptimeReport(id="1001", start_time_nanos=0, end_time_nanos=100, up=True),
+                UptimeReport(id="1001", start_time_nanos=100, end_time_nanos=100, up=False),
+                UptimeReport(id="1001", start_time_nanos=100, end_time_nanos=200, up=True),
+            ],
+        },
+        expectation=does_not_raise(),
+        want_uptime=Decimal("100.0"),
+    ),
+    "out_of_order_reports": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001"]),
+        reports_per_charger={
+            "1001": [
+                UptimeReport(id="1001", start_time_nanos=100, end_time_nanos=200, up=False),
+                UptimeReport(id="1001", start_time_nanos=0, end_time_nanos=100, up=True),
+            ],
+        },
+        expectation=does_not_raise(),
+        want_uptime=Decimal("50.0"),
+    ),
+    "reports_overlap": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001"]),
+        reports_per_charger={
+            "1001": [
+                UptimeReport(id="1001", start_time_nanos=0, end_time_nanos=100, up=True),
+                UptimeReport(id="1001", start_time_nanos=50, end_time_nanos=150, up=False),
+            ],
+        },
+        expectation=pytest.raises(ValueError),
     ),
 }
 test_ids = sorted(station_uptime_test_cases.keys())
@@ -153,5 +209,7 @@ test_ids = sorted(station_uptime_test_cases.keys())
     ids=test_ids,
 )
 def test_station_compute_uptime(test_case: StationUptimeTestCase) -> None:
-    uptime = test_case.station.compute_uptime(test_case.reports_per_charger)
-    assert uptime == test_case.want_uptime
+    with test_case.expectation:
+        uptime = test_case.station.compute_uptime(test_case.reports_per_charger)
+        if test_case.want_uptime is not None:
+            assert uptime == test_case.want_uptime

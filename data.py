@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
+from itertools import pairwise
 
 @dataclass
 class UptimeReport:
@@ -55,11 +56,22 @@ class Station:
         for charger_id in self.charger_ids:
             charger_reports.append(reports_per_charger.get(charger_id, []))
 
+        # sort each of the report sets by start time
+        for reports in charger_reports:
+            reports.sort(key=lambda r: r.start_time_nanos)
+
+        # confirm that report timelines do not overlap
+        for report in charger_reports:
+            for a, b in pairwise(report):
+                if a.end_time_nanos > b.start_time_nanos:
+                    raise ValueError(f"reports for chargers {a.id}: {a.end_time_nanos} > {b.start_time_nanos}")
+
         max_end_time = max(
             (report.end_time_nanos for reports in charger_reports for report in reports),
             default=0,
         )
-        assert max_end_time > 0, "no reports found for this station"
+        if max_end_time <= 0:
+            raise ValueError("no reports found for this station")
 
         min_start_time = min(
             (report.start_time_nanos for reports in charger_reports for report in reports),
