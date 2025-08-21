@@ -1,3 +1,34 @@
+# Candidate response
+
+I cloned the original repo into this github repo; commits beyond the initial two commits of the source
+repo represent my work on this challenge.
+
+Some notes
+
+* First, thanks for the fun challenge!  I enjoyed working on it.
+
+* For my solution, I tried to come up with a data model that promotes extensibility.  While some of that
+  is arguably overkill for a take-home problem, i've often found that that exercise helps me organize the
+  rest of the implementation.  Hopefully it's not interpreted as a tendency to premature optimization!
+
+* The meaty test cases are a combination of uptime calculations directly derived from the two sample inputs
+  and some other cases that seemed worth checking for.
+
+* To do the implementation, I did use the github copilot integration in VSCode.  However, the form of the
+  data structures and implementation were all done without any large-scale code generation.  Mostly, it was
+  helpful to complete symbol names, replicate some boilerplate in the test case tables, and to identify
+  one issue where i had used a Python construct that is only in v3.10 onward.
+
+* Some corner cases:
+    * the uptime definition says "out of the entire period that any charger at the station was reporting in,"
+      but it's not obvious what the behavior is if no charger at the station ever reported in.  That period
+      seems undefined to me, so i'm raising a `ValueError`, but another reasonable option would be to return
+      uptime of 0
+    * The problem description also appears to leave unspecified the desired behavior when reports overlap.  I
+      chose to raise a `ValueError` in this case as well.
+
+* I used the Python 3.9.6 interpreter, installed via homebew in an OS X environment
+
 # Overview
 
 This is a simple coding challenge to test your abilities. To join the software program at Electric Era, you must complete this challenge. 
