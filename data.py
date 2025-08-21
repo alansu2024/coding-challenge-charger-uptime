@@ -15,13 +15,12 @@ class UptimeReport:
         if len(elts) != 4:
             raise ValueError(f"failed to parse report line: {line}")
 
-        match elts[3]:
-            case "true":
-                up = True
-            case "false":
-                up = False
-            case _:
-                raise ValueError(f"invalid up value {elts[3]}")
+        if elts[3] == "true":
+            up = True
+        elif elts[3] == "false":
+            up = False
+        else:
+            raise ValueError(f"invalid up value {elts[3]}")
 
         return UptimeReport(
             id=elts[0],
@@ -78,7 +77,7 @@ class Station:
                     and charger_reports[idx][cur_indices[idx]].up
                 )
             up = any([_up(idx) for idx in range(len(charger_reports))])
-            print(f"{up=} @{cur_time}")
+            # print(f"{up=} @{cur_time}")
 
             # the next time is the min of hte next end time
             def _next_time(idx: int) -> int | None:
