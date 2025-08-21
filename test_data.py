@@ -30,6 +30,16 @@ uptime_report_test_cases: dict[str, UptimeReportTestCase] = {
         want_report=None,
         expectation=pytest.raises(ValueError),
     ),
+    "non_numeric_start": UptimeReportTestCase(
+        line="1001 0x 50000 true",
+        want_report=None,
+        expectation=pytest.raises(ValueError),
+    ),
+    "unrecognized_bool_value": UptimeReportTestCase(
+        line="1001 0 50000 not_a_bool",
+        want_report=None,
+        expectation=pytest.raises(ValueError),
+    ),
 }
 test_ids = sorted(uptime_report_test_cases.keys())
 @pytest.mark.parametrize(
