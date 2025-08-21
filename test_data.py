@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from data import UptimeReport
+from data import UptimeReport, Station
 from contextlib import AbstractContextManager, nullcontext as does_not_raise
 import pytest
 
@@ -51,3 +51,36 @@ def test_uptime_report_from_report_line(test_case: UptimeReportTestCase) -> None
     with test_case.expectation:
         report = UptimeReport.from_report_line(test_case.line)
         assert report == test_case.want_report
+
+
+@dataclass
+class StationTestCase:
+    line: str
+    want_station: Station | None
+    expectation: AbstractContextManager
+
+station_test_cases: dict[str, StationTestCase] = {
+    "valid_station": StationTestCase(
+        line="0 1001 1002",
+        want_station=Station(
+            id="0",
+            charger_ids=["1001", "1002"],
+        ),
+        expectation=does_not_raise(),
+    ),
+    "no_chargers": StationTestCase(
+        line="station1",
+        want_station=None,
+        expectation=pytest.raises(ValueError),
+    ),
+}
+test_ids = sorted(station_test_cases.keys())
+@pytest.mark.parametrize(
+    "test_case",
+    [station_test_cases[test_id] for test_id in test_ids],
+    ids=test_ids,
+)
+def test_station_from_station_line(test_case: StationTestCase) -> None:
+    with test_case.expectation:
+        station = Station.from_station_line(test_case.line)
+        assert station == test_case.want_station

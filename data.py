@@ -38,3 +38,14 @@ class Charger:
 class Station:
     id: str
     charger_ids: list[str]
+
+    @staticmethod
+    def from_station_line(line: str) -> Station:
+        elts: list[str] = line.split(" ")
+        if len(elts) < 2:
+            raise ValueError(f"failed to parse station line: {line}")
+
+        return Station(
+            id=elts[0],
+            charger_ids=elts[1:],
+        )
