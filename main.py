@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+from decimal import Decimal
 
 from data import Station, UptimeReport
 
@@ -9,7 +10,7 @@ def main() -> int:
     parser.add_argument("filename")
     args = parser.parse_args()
 
-    print(f"in main {args.filename=}")
+    # print(f"in main {args.filename=}")
 
     with open(args.filename, "r") as file:
         lines = [l.strip() for l in file.readlines()]
@@ -30,7 +31,7 @@ def main() -> int:
             if line == "":
                 continue
             station = Station.from_station_line(line)
-            print(f"Station {station.id} with chargers {station.charger_ids}")
+            # print(f"Station {station.id} with chargers {station.charger_ids}")
             stations.append(station)
 
 
@@ -40,17 +41,23 @@ def main() -> int:
             if line == "":
                 continue
             report = UptimeReport.from_report_line(line)
-            print(f"Report {report.id} from {report.start_time_nanos} to {report.end_time_nanos}, up: {report.up}")
+            # print(f"Report {report.id} from {report.start_time_nanos} to {report.end_time_nanos}, up: {report.up}")
             reports.append(report)
         reports_per_charger: dict[str, list[UptimeReport]] = {}
         for report in reports:
             if report.id not in reports_per_charger:
                 reports_per_charger[report.id] = []
             reports_per_charger[report.id].append(report)
-        for charger, reports in reports_per_charger.items():
-            print(f"Charger {charger}")
-            for report in reports_per_charger[charger]:
-                print(f"  {report.start_time_nanos} to {report.end_time_nanos}, up: {report.up}")
+        # for charger, reports in reports_per_charger.items():
+        #     print(f"Charger {charger}")
+        #     for report in reports_per_charger[charger]:
+        #         print(f"  {report.start_time_nanos} to {report.end_time_nanos}, up: {report.up}")
+
+        for station in stations:
+            uptime = station.compute_uptime(reports_per_charger)
+            # round uptime down to nearest integer
+            uptime_int = int(uptime.quantize(Decimal("1.0")))
+            print(f"{station.id} {uptime_int}")
 
 
     return 0

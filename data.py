@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from decimal import Decimal
 
 @dataclass
 class UptimeReport:
@@ -49,3 +50,6 @@ class Station:
             id=elts[0],
             charger_ids=elts[1:],
         )
+
+    def compute_uptime(self, reports_per_charger: dict[str, list[UptimeReport]]) -> Decimal:
+        return Decimal("25.7")
