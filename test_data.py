@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from data import UptimeReport, Station
 from contextlib import AbstractContextManager, nullcontext as does_not_raise
 import pytest
+from decimal import Decimal
 
 @dataclass
 class UptimeReportTestCase:
@@ -84,3 +85,34 @@ def test_station_from_station_line(test_case: StationTestCase) -> None:
     with test_case.expectation:
         station = Station.from_station_line(test_case.line)
         assert station == test_case.want_station
+
+
+@dataclass
+class StationUptimeTestCase:
+    station: Station
+    reports_per_charger: dict[str, list[UptimeReport]]
+    want_uptime: Decimal
+station_uptime_test_cases: dict[str, StationUptimeTestCase] = {
+    "basic_case": StationUptimeTestCase(
+        station=Station(id="0", charger_ids=["1001", "1002"]),
+        reports_per_charger={
+            "1001": [
+                UptimeReport(id="1001", start_time_nanos=0, end_time_nanos=50000, up=True),
+                UptimeReport(id="1001", start_time_nanos=50000, end_time_nanos=100000, up=False),
+            ],
+            "1002": [
+                UptimeReport(id="1002", start_time_nanos=50000, end_time_nanos=100000, up=True),
+            ],
+        },
+        want_uptime=Decimal("100.0"),
+    ),
+}
+test_ids = sorted(station_uptime_test_cases.keys())
+@pytest.mark.parametrize(
+    "test_case",
+    [station_uptime_test_cases[test_id] for test_id in test_ids],
+    ids=test_ids,
+)
+def test_station_compute_uptime(test_case: StationUptimeTestCase) -> None:
+    uptime = test_case.station.compute_uptime(test_case.reports_per_charger)
+    assert uptime == test_case.want_uptime
