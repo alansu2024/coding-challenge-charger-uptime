@@ -62,7 +62,11 @@ class Station:
         )
         assert max_end_time > 0, "no reports found for this station"
 
-        cur_time = 0
+        min_start_time = min(
+            (report.start_time_nanos for reports in charger_reports for report in reports),
+            default=0,
+        )
+        cur_time = min_start_time
         down_time = 0
         cur_indices = [0] * len(charger_reports)
         while cur_time < max_end_time:
@@ -96,4 +100,4 @@ class Station:
                 if cur_indices[idx] < len(charger_reports[idx]) and cur_time >= charger_reports[idx][cur_indices[idx]].end_time_nanos:
                     cur_indices[idx] += 1
 
-        return Decimal(max_end_time - down_time) / Decimal(max_end_time) * Decimal(100.0)
+        return Decimal(max_end_time - min_start_time - down_time) / Decimal(max_end_time - min_start_time) * Decimal(100.0)
